@@ -1,7 +1,6 @@
 import itertools
-import base64
 
-cipher = input("Cipher: ") or ""
+cipher = input("Cipher: ").lower() or ""
 alphabet = input("Alphabet [a-z]: ") or "abcdefghijklmnopqrstuvwxyz"
 words = [x.strip("\n") for x in open(input("Dictionary [words.txt]: ") or "words.txt", "r").readlines()]
 
@@ -27,32 +26,17 @@ def atbash(string):
     return replace(string, alphabet[::-1])
 
 
-def b64e(string):
-    return base64.b64encode(string.encode()).decode()
-
-
-def b64d(string):
-    try:
-        return base64.b64decode(string).decode()
-    except (base64.binascii.Error, UnicodeDecodeError):
-        return string
-
-
-functions = [(reverse,), (atbash,), (b64e,), (b64d,)]
+functions = [(reverse,), (atbash,)]
 for x in range(1, len(alphabet)):
     functions.append((caesar, x))
 
 for r in range(1, 8):
     print("==", r, "==")
+    rs = set()
     for x in itertools.combinations_with_replacement(functions, r):
         string = cipher
         for y in x:
             string = y[0](string, *y[1:])
-        i = 0
-        j = 0
-        for y in words:
-            if y in string:
-                i += len(y)
-                j += 1
-        if i/j > 2:
-             print(string)
+        rs.add(string)
+    rs = sorted(rs, key=lambda x: sum(len(y) for y in words if y in x))
+    print(*rs[-3:][::-1], sep="\n")
