@@ -52,7 +52,7 @@ for x in range(1, len(alphabet)):
     functions.append((caesar, x))
 for x in keys:
     functions.append((vigenere_dec, x))
-    #functions.append((vigenere_enc, x))
+    functions.append((vigenere_enc, x))
 
 
 def calculate_cipher(x):
@@ -66,6 +66,16 @@ def calculate_cipher(x):
 
     return string, info, val
 
+def is_valid(x):
+    for i in range(len(x) - 1):
+        if "vigenere" in x[i][0].__name__:
+            if "vigenere" in x[i + 1][0].__name__ and x[i][0].__name__ != x[i + 1][0].__name__ and x[i][1] == x[i + 1][1]:
+                    return False
+        elif x[i][0].__name__ == x[i + 1][0].__name__:
+            return False
+
+    return True
+
 p = Pool(4)
 
 for r in range(1, 8):
@@ -75,7 +85,10 @@ for r in range(1, 8):
             lambda x: x[0] != cipher,
             p.map(
                 calculate_cipher,
-                itertools.combinations_with_replacement(functions, r)
+                filter(
+                    is_valid,
+                    itertools.combinations_with_replacement(functions, r)
+                )
             )
         ),
         key=lambda x: x[2]
