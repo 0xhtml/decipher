@@ -1,4 +1,5 @@
 import itertools
+from multiprocessing import Pool
 
 cipher = input("Cipher: ").upper() or ""
 alphabet = input("Alphabet [A-Z]: ").upper() or "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -22,7 +23,19 @@ def atbash(string):
     return replace(string, alphabet[::-1])
 
 
-def vigenere(string, key):
+def vigenere_enc(string, key):
+    key = [x for x in key.upper() if x in alphabet]
+    i = 0
+    estring = ""
+    for char in string:
+        if char in alphabet:
+            char = caesar(char, alphabet.index(key[i % len(key)]))
+            i += 1
+        estring += char
+    return estring
+
+
+def vigenere_dec(string, key):
     key = [x for x in key.upper() if x in alphabet]
     i = 0
     estring = ""
@@ -38,15 +51,33 @@ functions = [(reverse,), (atbash,)]
 for x in range(1, len(alphabet)):
     functions.append((caesar, x))
 for x in keys:
-    functions.append((vigenere, x))
+    functions.append((vigenere_dec, x))
+    #functions.append((vigenere_enc, x))
+
+
+def calculate_cipher(x):
+    string = cipher
+    for y in x:
+        string = y[0](string, *y[1:])
+
+    info = tuple((x1[0].__name__, *x1[1:]) for x1 in x)
+
+    val = sum(len(y) for y in words if y in string)
+
+    return string, info, val
+
+p = Pool(4)
 
 for r in range(1, 8):
     print("==", r, "==")
-    rs = set()
-    for x in itertools.combinations_with_replacement(functions, r):
-        string = cipher
-        for y in x:
-            string = y[0](string, *y[1:])
-        rs.add((string,) + tuple((x1[0].__name__, *x1[1:]) for x1 in x))
-    rs = sorted(rs, key=lambda x: sum(len(y) for y in words if y in x[0]))
-    print(*rs[-3:][::-1], sep="\n")
+    rs = sorted(
+        filter(
+            lambda x: x[0] != cipher,
+            p.map(
+                calculate_cipher,
+                itertools.combinations_with_replacement(functions, r)
+            )
+        ),
+        key=lambda x: x[2]
+    )
+    print(*rs[-6:][::-1], sep="\n")
